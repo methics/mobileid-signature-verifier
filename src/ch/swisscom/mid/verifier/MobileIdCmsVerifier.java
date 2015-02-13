@@ -21,11 +21,9 @@ package ch.swisscom.mid.verifier;
 
 import java.io.FileInputStream;
 import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
+import java.security.Security;
 import java.security.cert.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -64,21 +62,19 @@ public class MobileIdCmsVerifier {
 		}
 		
 		try {
+			
 			MobileIdCmsVerifier verifier = new MobileIdCmsVerifier(args[0]);
 
 			KeyStore keyStore = KeyStore.getInstance("JKS");
 			keyStore.load(new FileInputStream("jks/truststore.jks"), "secret".toCharArray());
 			
-			// Validate certificate path against trust anchor
-			System.out.println("X509 Path Validated: " + verifier.isCertPathValid(keyStore));
+			// If you are behind a Proxy..
+			// System.setProperty("proxyHost", "10.185.32.54");
+			// System.setProperty("proxyPort", "8079");
+			// or set it via VM arguments: -DproxySet=true -DproxyHost=10.185.32.54 -DproxyPort=8079
 			
-			// TODO: OCSP or CRL revocation check
-			System.out.println("X509 Revoked: " + verifier.isRevoked(
-					(X509Certificate) keyStore.getCertificate("swisscom root ca 2"),
-					(X509Certificate) keyStore.getCertificate("Swisscom_Rubin_CA_2"),
-					(X509Certificate) keyStore.getCertificate("Swisscom_OCSP_Signer_Rubin_CA_2"),
-					"http://ocsp.swissdigicert.ch/sdcs-rubin2")
-					);
+			// Validate certificate path against trust anchor incl. OCSP revocation check
+			System.out.println("X509 Valid: " + verifier.isCertValid(keyStore));
 
 			// Output X509 Certificate Details
 			System.out.println("X509 SerialNumber: " + verifier.getX509SerialNumber());
@@ -118,32 +114,37 @@ public class MobileIdCmsVerifier {
 	}
 
 	/**
-	 * Validates the specified certification path
+	 * Validates the specified certificate path incl. OCSP revocation check
 	 * 
 	 * @param truststore
-	 * @return
-	 * @throws CertificateException
-	 * @throws KeyStoreException
-	 * @throws InvalidAlgorithmParameterException
-	 * @throws NoSuchAlgorithmException
-	 * @throws CertPathValidatorException
+	 * @return true if all certificate is valid
+	 * @throws Exception 
 	 */
-	private boolean isCertPathValid(KeyStore truststore) throws CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, CertPathValidatorException {
+	private boolean isCertValid(KeyStore truststore) throws Exception {
 		List<X509Certificate> certlist = new ArrayList<X509Certificate>();
 		certlist.add(signerCert);
 
 		PKIXParameters params = new PKIXParameters(truststore);
-		params.setRevocationEnabled(false);
+		
+		// Activate certificate revocation checking
+        params.setRevocationEnabled(true);
+
+        // Activate OCSP
+        Security.setProperty("ocsp.enable", "true");
+
+        // Activate CRLDP
+        System.setProperty("com.sun.security.enableCRLDP", "true");
+
+        // Ensure that the ocsp.responderURL property is not set.
+		if (Security.getProperty("ocsp.responderURL") != null) {
+			throw new Exception("The ocsp.responderURL property must not be set");
+		}
+
 		CertPathValidator cpv = CertPathValidator.getInstance(CertPathValidator.getDefaultType());
 
 		cpv.validate(CertificateFactory.getInstance("X.509").generateCertPath(certlist), params);
 
-		return true;
-	}
-	
-	// TODO: code
-	private boolean isRevoked(X509Certificate rootCert, X509Certificate intermediateCert, X509Certificate ocspCert, String ocspUrl) {
-		return false;
+		return true; // No Exception, all fine..
 	}
 
 	/**

@@ -15,17 +15,9 @@ MobileIdCmsVerifier verifier = new MobileIdCmsVerifier(args[0]);
 
 KeyStore keyStore = KeyStore.getInstance("JKS");
 keyStore.load(new FileInputStream("jks/truststore.jks"), "secret".toCharArray());
-			
-// Validate certificate path against trust anchor
-System.out.println("X509 Path Validated: " + verifier.isCertPathValid(keyStore));
-			
-// TODO: OCSP or CRL revocation check
-System.out.println("X509 Revoked: " + verifier.isRevoked(
-		(X509Certificate) keyStore.getCertificate("swisscom root ca 2"),
-		(X509Certificate) keyStore.getCertificate("Swisscom_Rubin_CA_2"),
-		(X509Certificate) keyStore.getCertificate("Swisscom_OCSP_Signer_Rubin_CA_2"),
-		"http://ocsp.swissdigicert.ch/sdcs-rubin2")
-		);
+
+// Validate certificate path against trust anchor incl. OCSP revocation check
+System.out.println("X509 Valid: " + verifier.isCertValid(keyStore));
 
 // Output X509 Certificate Details
 System.out.println("X509 SerialNumber: " + verifier.getX509SerialNumber());
@@ -47,7 +39,7 @@ System.out.println("Signature Verified: " + verifier.isVerified());
 ```
 $ javac -d ./class -cp ".:./lib/*" ./src/ch/swisscom/mid/verifier/*.java
 
-$ jar cfe ./jar/midverifier-v1.1.jar ch.swisscom.mid.verifier.MobileIdCmsVerifier -C ./class .
+$ jar cfe ./jar/midverifier-v1.2.jar ch.swisscom.mid.verifier.MobileIdCmsVerifier -C ./class .
 
 $ java -cp ".:./lib/*:./jar/*" ch.swisscom.mid.verifier.MobileIdCmsVerifier
   Usage: ch.swisscom.mid.verifier.MobileIdCmsVerifier <Base64Signature>
@@ -62,8 +54,7 @@ $ java -cp ".:./lib/*:./jar/*" ch.swisscom.mid.verifier.MobileIdCmsVerifier
 ##### Example Output
 
 ```
-X509 Path Validated: true
-X509 Revoked: false
+X509 Valid: true
 X509 SerialNumber: 181047290566811336462171535902987480739
 X509 Subject DN: C=CH, CN=MIDCHE5HR8NAWUB3:PN, SERIALNUMBER=MIDCHE5HR8NAWUB3
 X509 Issuer: CN=Swisscom Rubin CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
