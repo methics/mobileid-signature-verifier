@@ -21,10 +21,15 @@ package ch.swisscom.mid.verifier;
 
 import java.io.FileInputStream;
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.cert.*;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -61,19 +66,19 @@ public class MobileIdCmsVerifier {
 		try {
 			MobileIdCmsVerifier verifier = new MobileIdCmsVerifier(args[0]);
 
-			// Swisscom Root CA 2 Certificate (Production)
-			// Alias name: swisscom root ca 2
-			// Owner: CN=Swisscom Root CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
-			// Certificate fingerprints MD5: 5B:04:69:EC:A5:83:94:63:18:A7:86:D0:E4:F2:6E:19
 			KeyStore keyStore = KeyStore.getInstance("JKS");
 			keyStore.load(new FileInputStream("jks/truststore.jks"), "secret".toCharArray());
-			X509Certificate rootCert = (X509Certificate) keyStore.getCertificate("swisscom root ca 2");
-
-			// TODO: Validate Certificate against trust anchor (root certificate)
-			System.out.println("X509 Trusted: " + verifier.isSignerCertTrusted(rootCert));
+			
+			// Validate certificate path against trust anchor
+			System.out.println("X509 Path Validated: " + verifier.isCertPathValid(keyStore));
 			
 			// TODO: OCSP or CRL revocation check
-			System.out.println("X509 Revoked: " + verifier.isRevoked());
+			System.out.println("X509 Revoked: " + verifier.isRevoked(
+					(X509Certificate) keyStore.getCertificate("swisscom root ca 2"),
+					(X509Certificate) keyStore.getCertificate("Swisscom_Rubin_CA_2"),
+					(X509Certificate) keyStore.getCertificate("Swisscom_OCSP_Signer_Rubin_CA_2"),
+					"http://ocsp.swissdigicert.ch/sdcs-rubin2")
+					);
 
 			// Output X509 Certificate Details
 			System.out.println("X509 SerialNumber: " + verifier.getX509SerialNumber());
@@ -112,13 +117,32 @@ public class MobileIdCmsVerifier {
 		signerCert = new JcaX509CertificateConverter().getCertificate(x509CertHolder);
 	}
 
-	// TODO: code
-	private boolean isSignerCertTrusted(X509Certificate rootCert) {
+	/**
+	 * Validates the specified certification path
+	 * 
+	 * @param truststore
+	 * @return
+	 * @throws CertificateException
+	 * @throws KeyStoreException
+	 * @throws InvalidAlgorithmParameterException
+	 * @throws NoSuchAlgorithmException
+	 * @throws CertPathValidatorException
+	 */
+	private boolean isCertPathValid(KeyStore truststore) throws CertificateException, KeyStoreException, InvalidAlgorithmParameterException, NoSuchAlgorithmException, CertPathValidatorException {
+		List<X509Certificate> certlist = new ArrayList<X509Certificate>();
+		certlist.add(signerCert);
+
+		PKIXParameters params = new PKIXParameters(truststore);
+		params.setRevocationEnabled(false);
+		CertPathValidator cpv = CertPathValidator.getInstance(CertPathValidator.getDefaultType());
+
+		cpv.validate(CertificateFactory.getInstance("X.509").generateCertPath(certlist), params);
+
 		return true;
 	}
 	
 	// TODO: code
-	private boolean isRevoked() {
+	private boolean isRevoked(X509Certificate rootCert, X509Certificate intermediateCert, X509Certificate ocspCert, String ocspUrl) {
 		return false;
 	}
 
