@@ -83,7 +83,7 @@ public class MobileIdCmsVerifier {
 			System.out.println("X509 Validity Not Before: " + verifier.getX509NotBefore());
 			System.out.println("X509 Validity Not After: " + verifier.getX509NotAfter());
 
-			System.out.println("User's unqiue Mobile ID SerialNumber: " + verifier.getMIDSerialNumber());
+			System.out.println("User's unique Mobile ID SerialNumber: " + verifier.getMIDSerialNumber());
 
 			// Get signed content (should be equal to the DTBS Message of the Signature Request)
 			System.out.println("Signed Data: " + verifier.getSignedData());
