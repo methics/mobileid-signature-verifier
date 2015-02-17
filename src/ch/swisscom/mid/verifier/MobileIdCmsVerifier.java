@@ -132,9 +132,10 @@ public class MobileIdCmsVerifier {
 			X509CertificateHolder certHolder =  (X509CertificateHolder)certIt.next();
 			X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certHolder);
 			System.out.println("X509 Certificate #" + ++i);
-			System.out.println("X509 Issuer: " + cert.getSubjectDN());
-			System.out.println("X509 Subject DN: " + cert.getIssuerDN());
+			System.out.println("X509 Issuer: " + cert.getIssuerDN());
+			System.out.println("X509 Subject DN: " + cert.getSubjectDN());
 			System.out.println("X509 SerialNumber: " + cert.getSerialNumber());
+			System.out.println("SignerCert: " +  (cert.getBasicConstraints() == -1 ? "Yes" : "No"));
 			System.out.println();
 		}
 	}
