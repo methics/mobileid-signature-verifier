@@ -91,9 +91,10 @@ $ java -cp ".:./lib/*:./jar/*" ch.swisscom.mid.verifier.MobileIdCmsVerifier
 
 ```
 X509 Certificate #1
-X509 Issuer: C=CH, CN=MIDCHE5HR8NAWUB3:PN, SERIALNUMBER=MIDCHE5HR8NAWUB3
-X509 Subject DN: CN=Swisscom Rubin CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
+X509 Issuer: CN=Swisscom Rubin CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
+X509 Subject DN: C=CH, CN=MIDCHE5HR8NAWUB3:PN, SERIALNUMBER=MIDCHE5HR8NAWUB3
 X509 SerialNumber: 181047290566811336462171535902987480739
+SignerCert: Yes
 
 X509 SignerCert SerialNumber: 181047290566811336462171535902987480739
 X509 SignerCert Issuer: CN=Swisscom Rubin CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
