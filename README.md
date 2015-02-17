@@ -5,9 +5,41 @@ For simplicity, only basic validation is done. You may use the code as a basis t
 More GitHub samples on Mobile ID can be found at https://github.com/SCS-CBU-CED-IAM
 Futher information about the Swisscom Mobile ID Service can be found at http://swisscom.com/mid, i.e. you should read the Mobile ID Client Reference Guide.
 
+##### TrustStore
+
+The Trust Anchor used by the verifier sample is based on the Swisscom Root CA 2 certificate. The TrustStore in the subfolder `jks` contains the root certificate plus intermediate CA certificates.
+The TrustStore is protected with the password **secret** and contains the following public certificates (from swissdigicert.ch):
+
+```
+Alias name: swisscom root ca 2
+Owner: CN=Swisscom Root CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
+Issuer: CN=Swisscom Root CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
+Certificate fingerprints (MD5): 5B:04:69:EC:A5:83:94:63:18:A7:86:D0:E4:F2:6E:19
+```
+```
+Alias name: swisscom_rubin_ca_2
+Owner: CN=Swisscom Rubin CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
+Issuer: CN=Swisscom Root CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
+Serial number: 59cee707d35b3a863395b29b8e7fd290
+Certificate fingerprints (MD5): 32:8F:87:8F:17:5B:46:C7:84:A0:47:3E:13:2E:02:1A
+```
+```
+Alias name: swisscom_rubin_ca_3
+Owner: C=ch, O=Swisscom, OU=Digital Certificate Services, CN=Swisscom Rubin CA 3
+Issuer: CN=Swisscom Root CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
+Certificate fingerprints (MD5): CD:8E:50:05:01:38:63:D5:88:04:C7:FD:E4:3F:B7:F5
+```
+
 ##### Usage
 
 Refer to the simplified examples used in the main method of the class `ch.swisscom.mid.verifier.MobileIdCmsVerifier`.
+The verifier sample main method will ouput the following details:
+
+# Print result of the certificate path validation against trust anchor (truststore) incl. an online OCSP revocation check
+# Print x509 certificate details (i.e. SerialNumber, SubjectDN, Issuer, Validity Date)
+# Print the user's unique Mobile ID SerialNumber
+# Print the Signed Data, which should be equal to the DTBS Message of the origin signature request
+# Print result of the signature verification on the SignerInformation object
 
 ###### Code snippet from the main method example
 ```java
@@ -26,7 +58,7 @@ System.out.println("X509 Issuer: " + verifier.getX509IssuerDN());
 System.out.println("X509 Validity Not Before: " + verifier.getX509NotBefore());
 System.out.println("X509 Validity Not After: " + verifier.getX509NotAfter());
 
-System.out.println("User's unqiue Mobile ID SerialNumber: " + verifier.getMIDSerialNumber());
+System.out.println("User's unique Mobile ID SerialNumber: " + verifier.getMIDSerialNumber());
 
 // Get signed content (should be equal to the DTBS Message of the Signature Request)
 System.out.println("Signed Data: " + verifier.getSignedData());
@@ -60,7 +92,7 @@ X509 Subject DN: C=CH, CN=MIDCHE5HR8NAWUB3:PN, SERIALNUMBER=MIDCHE5HR8NAWUB3
 X509 Issuer: CN=Swisscom Rubin CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
 X509 Validity Not Before: Wed Dec 24 10:29:59 CET 2014
 X509 Validity Not After: Sun Dec 24 10:29:59 CET 2017
-User's unqiue Mobile ID SerialNumber: MIDCHE5HR8NAWUB3
+User's unique Mobile ID SerialNumber: MIDCHE5HR8NAWUB3
 Signed Data: Test: Sign this Text? (ptp2cn)
 Signature Verified: true
 ```
