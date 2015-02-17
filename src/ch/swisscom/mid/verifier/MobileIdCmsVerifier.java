@@ -27,6 +27,7 @@ import java.security.Security;
 import java.security.cert.*;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -73,23 +74,26 @@ public class MobileIdCmsVerifier {
 			// System.setProperty("proxyPort", "8079");
 			// or set it via VM arguments: -DproxySet=true -DproxyHost=10.185.32.54 -DproxyPort=8079
 			
-			// Validate certificate path against trust anchor incl. OCSP revocation check
-			System.out.println("X509 Valid: " + verifier.isCertValid(keyStore));
+			// Print Issuer/SubjectDN/SerialNumber of all x509 certificates that can be found in the CMSSignedData
+			verifier.printAllX509Certificates();
 
-			// Output X509 Certificate Details
-			System.out.println("X509 SerialNumber: " + verifier.getX509SerialNumber());
-			System.out.println("X509 Subject DN: " + verifier.getX509SubjectDN());
-			System.out.println("X509 Issuer: " + verifier.getX509IssuerDN());
-			System.out.println("X509 Validity Not Before: " + verifier.getX509NotBefore());
-			System.out.println("X509 Validity Not After: " + verifier.getX509NotAfter());
+			// Print Signer's X509 Certificate Details
+			System.out.println("X509 SignerCert SerialNumber: " + verifier.getX509SerialNumber());
+			System.out.println("X509 SignerCert Issuer: " + verifier.getX509IssuerDN());
+			System.out.println("X509 SignerCert Subject DN: " + verifier.getX509SubjectDN());
+			System.out.println("X509 SignerCert Validity Not Before: " + verifier.getX509NotBefore());
+			System.out.println("X509 SignerCert Validity Not After: " + verifier.getX509NotAfter());
 
 			System.out.println("User's unique Mobile ID SerialNumber: " + verifier.getMIDSerialNumber());
-
-			// Get signed content (should be equal to the DTBS Message of the Signature Request)
+			
+			// Print signed content (should be equal to the DTBS Message of the Signature Request)
 			System.out.println("Signed Data: " + verifier.getSignedData());
 
 			// Verify the signature on the SignerInformation object
-			System.out.println("Signature Verified: " + verifier.isVerified());
+			System.out.println("Signature Valid: " + verifier.isVerified());
+			
+			// Validate certificate path against trust anchor incl. OCSP revocation check
+			System.out.println("X509 SignerCert Valid (Path+OCSP): " + verifier.isCertValid(keyStore));
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -111,6 +115,28 @@ public class MobileIdCmsVerifier {
 		signerInfo = (SignerInformation) signerInfoStore.getSigners().iterator().next();
 		x509CertHolder = (X509CertificateHolder) cmsSignedData.getCertificates().getMatches(signerInfo.getSID()).iterator().next();
 		signerCert = new JcaX509CertificateConverter().getCertificate(x509CertHolder);
+	}
+	
+	/**
+	 * Prints Issuer/SubjectDN/SerialNumber of all x509 certificates that can be found in the CMSSignedData
+	 * 
+	 * @throws CertificateException
+	 */
+	private void printAllX509Certificates() throws CertificateException {
+		
+		// Find all available certificates with getMatches(null)
+		Iterator<?> certIt = cmsSignedData.getCertificates().getMatches(null).iterator();
+		int i = 0;
+		
+		while (certIt.hasNext()){
+			X509CertificateHolder certHolder =  (X509CertificateHolder)certIt.next();
+			X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certHolder);
+			System.out.println("X509 Certificate #" + ++i);
+			System.out.println("X509 Issuer: " + cert.getSubjectDN());
+			System.out.println("X509 Subject DN: " + cert.getIssuerDN());
+			System.out.println("X509 SerialNumber: " + cert.getSerialNumber());
+			System.out.println();
+		}
 	}
 
 	/**

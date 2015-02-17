@@ -35,11 +35,12 @@ Certificate fingerprints (MD5): CD:8E:50:05:01:38:63:D5:88:04:C7:FD:E4:3F:B7:F5
 Refer to the simplified examples used in the main method of the class `ch.swisscom.mid.verifier.MobileIdCmsVerifier`.
 The verifier sample main method will ouput the following details:
 
-* Print result of the certificate path validation against trust anchor (truststore) incl. an OCSP check
+* Print Issuer/SubjectDN/SerialNumber of all x509 certificates that can be found
 * Print x509 certificate details (i.e. SerialNumber, SubjectDN, Issuer, Validity Date)
 * Print the user's unique Mobile ID SerialNumber
 * Print the Signed Data, which should be equal to the origin DTBS Message
 * Print result of the signature verification on the SignerInformation object
+* Print result of the certificate path validation against trust anchor (truststore) incl. an OCSP check
 
 ###### Code snippet from the main method example
 ```java
@@ -47,24 +48,27 @@ MobileIdCmsVerifier verifier = new MobileIdCmsVerifier(args[0]);
 
 KeyStore keyStore = KeyStore.getInstance("JKS");
 keyStore.load(new FileInputStream("jks/truststore.jks"), "secret".toCharArray());
+			
+// Print Issuer/SubjectDN/SerialNumber of all x509 certificates that can be found in the CMSSignedData
+verifier.printAllX509Certificates();
 
-// Validate certificate path against trust anchor incl. OCSP revocation check
-System.out.println("X509 Valid: " + verifier.isCertValid(keyStore));
-
-// Output X509 Certificate Details
-System.out.println("X509 SerialNumber: " + verifier.getX509SerialNumber());
-System.out.println("X509 Subject DN: " + verifier.getX509SubjectDN());
-System.out.println("X509 Issuer: " + verifier.getX509IssuerDN());
-System.out.println("X509 Validity Not Before: " + verifier.getX509NotBefore());
-System.out.println("X509 Validity Not After: " + verifier.getX509NotAfter());
+// Print Signer's X509 Certificate Details
+System.out.println("X509 SignerCert SerialNumber: " + verifier.getX509SerialNumber());
+System.out.println("X509 SignerCert Issuer: " + verifier.getX509IssuerDN());
+System.out.println("X509 SignerCert Subject DN: " + verifier.getX509SubjectDN());
+System.out.println("X509 SignerCert Validity Not Before: " + verifier.getX509NotBefore());
+System.out.println("X509 SignerCert Validity Not After: " + verifier.getX509NotAfter());
 
 System.out.println("User's unique Mobile ID SerialNumber: " + verifier.getMIDSerialNumber());
-
-// Get signed content (should be equal to the DTBS Message of the Signature Request)
+			
+// Print signed content (should be equal to the DTBS Message of the Signature Request)
 System.out.println("Signed Data: " + verifier.getSignedData());
 
 // Verify the signature on the SignerInformation object
-System.out.println("Signature Verified: " + verifier.isVerified());
+System.out.println("Signature Valid: " + verifier.isVerified());
+			
+// Validate certificate path against trust anchor incl. OCSP revocation check
+System.out.println("X509 SignerCert Valid (Path+OCSP): " + verifier.isCertValid(keyStore));
 ```
 
 ###### Example Usage
@@ -86,13 +90,18 @@ $ java -cp ".:./lib/*:./jar/*" ch.swisscom.mid.verifier.MobileIdCmsVerifier
 ##### Example Output
 
 ```
-X509 Valid: true
+X509 Certificate #1
+X509 Issuer: C=CH, CN=MIDCHE5HR8NAWUB3:PN, SERIALNUMBER=MIDCHE5HR8NAWUB3
+X509 Subject DN: CN=Swisscom Rubin CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
 X509 SerialNumber: 181047290566811336462171535902987480739
-X509 Subject DN: C=CH, CN=MIDCHE5HR8NAWUB3:PN, SERIALNUMBER=MIDCHE5HR8NAWUB3
-X509 Issuer: CN=Swisscom Rubin CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
-X509 Validity Not Before: Wed Dec 24 10:29:59 CET 2014
-X509 Validity Not After: Sun Dec 24 10:29:59 CET 2017
+
+X509 SignerCert SerialNumber: 181047290566811336462171535902987480739
+X509 SignerCert Issuer: CN=Swisscom Rubin CA 2, OU=Digital Certificate Services, O=Swisscom, C=ch
+X509 SignerCert Subject DN: C=CH, CN=MIDCHE5HR8NAWUB3:PN, SERIALNUMBER=MIDCHE5HR8NAWUB3
+X509 SignerCert Validity Not Before: Wed Dec 24 10:29:59 CET 2014
+X509 SignerCert Validity Not After: Sun Dec 24 10:29:59 CET 2017
 User's unique Mobile ID SerialNumber: MIDCHE5HR8NAWUB3
 Signed Data: Test: Sign this Text? (ptp2cn)
-Signature Verified: true
+Signature Valid: true
+X509 SignerCert Valid (Path+OCSP): true
 ```
