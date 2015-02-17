@@ -35,10 +35,10 @@ Certificate fingerprints (MD5): CD:8E:50:05:01:38:63:D5:88:04:C7:FD:E4:3F:B7:F5
 Refer to the simplified examples used in the main method of the class `ch.swisscom.mid.verifier.MobileIdCmsVerifier`.
 The verifier sample main method will ouput the following details:
 
-* Print result of the certificate path validation against trust anchor (truststore) incl. an online OCSP revocation check
+* Print result of the certificate path validation against trust anchor (truststore) incl. an OCSP check
 * Print x509 certificate details (i.e. SerialNumber, SubjectDN, Issuer, Validity Date)
 * Print the user's unique Mobile ID SerialNumber
-* Print the Signed Data, which should be equal to the DTBS Message of the origin signature request
+* Print the Signed Data, which should be equal to the origin DTBS Message
 * Print result of the signature verification on the SignerInformation object
 
 ###### Code snippet from the main method example
