@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 - Swisscom (Schweiz) AG
+ * Copyright (C) 2017 - Swisscom (Schweiz) AG
  * 
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the 
@@ -33,16 +33,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.commons.codec.binary.Base64;
 import org.bouncycastle.cert.*;
 import org.bouncycastle.cert.jcajce.*;
 import org.bouncycastle.cms.*;
-import org.bouncycastle.cms.bc.BcRSASignerInfoVerifierBuilder;
-import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
-import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder;
+import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 
 public class MobileIdCmsVerifier {
 
@@ -69,7 +66,7 @@ public class MobileIdCmsVerifier {
 		
 		try {
 			
-			MobileIdCmsVerifier verifier = null;
+			MobileIdCmsVerifier midverifier = null;
 			
 			String jks = "jks/truststore.jks";
 			String jkspwd = "secret";
@@ -84,13 +81,13 @@ public class MobileIdCmsVerifier {
 					jkspwd = args[i].substring(args[i].indexOf("=") + 1).trim();
 				} 
 				else if (param.contains("-cms=")) {
-					verifier = new MobileIdCmsVerifier(args[i].substring(args[i].indexOf("=") + 1).trim());
+					midverifier = new MobileIdCmsVerifier(args[i].substring(args[i].indexOf("=") + 1).trim());
 				} 
 				else if (param.contains("-stdin")) {
 					BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 				    String stdin;
 				    if ((stdin = in.readLine()) != null && stdin.length() != 0)
-				    	verifier = new MobileIdCmsVerifier(stdin.trim());
+				    	midverifier = new MobileIdCmsVerifier(stdin.trim());
 				}
 			}
 			
@@ -103,26 +100,27 @@ public class MobileIdCmsVerifier {
 			// or set it via VM arguments: -DproxySet=true -DproxyHost=10.185.32.54 -DproxyPort=8079
 			
 			// Print Issuer/SubjectDN/SerialNumber of all x509 certificates that can be found in the CMSSignedData
-			verifier.printAllX509Certificates();
+			midverifier.printAllX509Certificates();
 
 			// Print Signer's X509 Certificate Details
-			System.out.println("X509 SignerCert SerialNumber: " + verifier.getX509SerialNumber());
-			System.out.println("X509 SignerCert Issuer: " + verifier.getX509IssuerDN());
-			System.out.println("X509 SignerCert Subject DN: " + verifier.getX509SubjectDN());
-			System.out.println("X509 SignerCert Validity Not Before: " + verifier.getX509NotBefore());
-			System.out.println("X509 SignerCert Validity Not After: " + verifier.getX509NotAfter());
-			System.out.println("X509 SignerCert Validity currently valid: " + verifier.isCertCurrentlyValid());
+			System.out.println("X509 SignerCert SerialNumber: " + midverifier.getX509SerialNumber());
+			System.out.println("X509 SignerCert Issuer: " + midverifier.getX509IssuerDN());
+			System.out.println("X509 SignerCert Subject DN: " + midverifier.getX509SubjectDN());
+			System.out.println("X509 SignerCert Validity Not Before: " + midverifier.getX509NotBefore());
+			System.out.println("X509 SignerCert Validity Not After: " + midverifier.getX509NotAfter());
+			System.out.println("X509 SignerCert Validity currently valid: " + midverifier.isCertCurrentlyValid());
+			System.out.println("X509 SignerCert Key Alogrithm: " + midverifier.getAlgo());
 
-			System.out.println("User's unique Mobile ID SerialNumber: " + verifier.getMIDSerialNumber());
+			System.out.println("User's unique Mobile ID SerialNumber: " + midverifier.getMIDSerialNumber());
 			
 			// Print signed content (should be equal to the DTBS Message of the Signature Request)
-			System.out.println("Signed Data: " + verifier.getSignedData());
+			System.out.println("Signed Data: " + midverifier.getSignedData());
 
 			// Verify the signature on the SignerInformation object
-			System.out.println("Signature Valid: " + verifier.isVerified());
+			System.out.println("Signature Valid: " + midverifier.isVerified());
 			
 			// Validate certificate path against trust anchor incl. OCSP revocation check
-			System.out.println("X509 SignerCert Valid (Path+OCSP): " + verifier.isCertValid(keyStore));
+			System.out.println("X509 SignerCert Valid (Path+OCSP): " + midverifier.isCertValid(keyStore));
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -165,10 +163,32 @@ public class MobileIdCmsVerifier {
 			System.out.println("X509 Subject DN: " + cert.getSubjectDN());
 			System.out.println("X509 SerialNumber: " + cert.getSerialNumber());
 			System.out.println("SignerCert: " +  (cert.getBasicConstraints() == -1 ? "Yes" : "No"));
+			System.out.println("PubKey: " + cert.getPublicKey());
+			System.out.println("PubKeyEncoded: " + getHexData(cert.getPublicKey().getEncoded()));
 			System.out.println();
 		}
 	}
 
+	public static String getHexData(final byte[] data) {
+		StringBuffer hexBuffer = new StringBuffer();
+		for (int i = 0; i < data.length; i++) {
+			// convert byte to integer value (unsigned)
+			int byteValue = data[i] & 0xff;
+
+			// generate HEX value
+			String hexValue = Integer.toHexString(byteValue);
+
+			// check if hex representation needs to be prefixed
+			if (hexValue.length() < 2) {
+				hexBuffer.append("0").append(hexValue);
+			} else {
+				hexBuffer.append(hexValue);
+			}
+		}
+		return hexBuffer.toString();
+	}
+	
+	
 	/**
 	 * Validates the specified certificate path incl. OCSP revocation check
 	 * 
@@ -218,6 +238,15 @@ public class MobileIdCmsVerifier {
 			e.printStackTrace();
 		}
 		return false;
+	}
+	
+	/**
+	 * Returns the standard algorithm name for the public key.
+	 * 
+	 * @return Standard Algorithm of the public key
+	 */
+	private String getAlgo() {
+		return signerCert.getPublicKey().getAlgorithm();
 	}
 
 	/**
@@ -293,13 +322,11 @@ public class MobileIdCmsVerifier {
 	 * @return true if the signer information is verified, false otherwise.
 	 * @throws OperatorCreationException
 	 * @throws CMSException
+	 * @throws CertificateException 
 	 */
-	private boolean isVerified() throws OperatorCreationException, CMSException {
-		// Verify that the given verifier can successfully verify the signature on this SignerInformation object
-		SignerInformationVerifier verifier = new BcRSASignerInfoVerifierBuilder(new DefaultCMSSignatureAlgorithmNameGenerator(),
-				new DefaultSignatureAlgorithmIdentifierFinder(), new DefaultDigestAlgorithmIdentifierFinder(), new BcDigestCalculatorProvider())
-				.build(x509CertHolder);
-		return signerInfo.verify(verifier);
+	private boolean isVerified() throws OperatorCreationException, CMSException, CertificateException {
+		Security.addProvider(new BouncyCastleProvider());
+		return signerInfo.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(x509CertHolder));
 	}
 
 }
