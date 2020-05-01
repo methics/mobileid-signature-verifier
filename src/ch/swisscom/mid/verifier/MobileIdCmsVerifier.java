@@ -111,7 +111,7 @@ public class MobileIdCmsVerifier {
 			System.out.println("X509 SignerCert Validity currently valid: " + midverifier.isCertCurrentlyValid());
 			System.out.println("X509 SignerCert Key Alogrithm: " + midverifier.getAlgo());
 
-			System.out.println("User's unique Mobile ID SerialNumber: " + midverifier.getMIDSerialNumber());
+			//System.out.println("User's unique Mobile ID SerialNumber: " + midverifier.getMIDSerialNumber());
 			
 			// Print signed content (should be equal to the DTBS Message of the Signature Request)
 			System.out.println("Signed Data: " + midverifier.getSignedData());
